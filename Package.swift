@@ -26,7 +26,7 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "CoreCQI",
-            dependencies: ["FeistyDB", "Runtime", "FeistyDB"]),
+            dependencies: ["FeistyDB", "FeistyExtensions", "Runtime"]),
         .testTarget(
             name: "CoreCQITests",
             dependencies: ["CoreCQI"]),

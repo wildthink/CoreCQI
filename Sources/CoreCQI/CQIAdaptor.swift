@@ -249,7 +249,7 @@ public extension CQIAdaptor {
                 limit: Int = 0) throws -> [Any] {
         
         let table = table ?? cfg.ename
-        let cols = cfg.slots.map { $0.column }
+        let cols = cfg.slots.filter({ !$0.isMapped }).map { $0.column }
         
         // FIXME: NOT yet using Sort or NSPredicate
         var recs: [Any] = []
@@ -264,7 +264,8 @@ public extension CQIAdaptor {
         
         var nob = try createInstance(of: cfg.type)
         
-        for (ndx, slot) in cfg.slots.enumerated() {
+//        for (ndx, slot) in cfg.slots.enumerated() {
+        for slot in cfg.slots {
             let property = try cfg.info.property(named: slot.property)
             var valueType: Any.Type = property.type
             
@@ -275,7 +276,7 @@ public extension CQIAdaptor {
             }
             // FIXME: Add the ability to use a ValueTransformer here
             // Actually will need to create a Swifty TypeTransformer
-            let db_value = try row.value(at: ndx)
+            let db_value = try row.value(at: slot.col_ndx)
             let value: Any?
             if let factory = valueType as? DatabaseSerializable.Type
             {

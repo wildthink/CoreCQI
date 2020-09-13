@@ -23,10 +23,10 @@ public extension Row {
 }
 
 public extension Database {
-    func select(_ cols: [String], from table: String,
-                where test: String? = nil, limit: Int,
-                
-                _ block: ((_ row: Row) throws -> ())) throws {
+    
+    func selectSQL(_ cols: [String], from table: String,
+                where test: String? = nil, limit: Int) -> String
+    {
         var sql = "SELECT \(cols.joined(separator: ",")) FROM \(table)"
         if let test = test {
             Swift.print(" WHERE \(test)", terminator: "", to: &sql)
@@ -34,6 +34,13 @@ public extension Database {
         if limit > 0 {
             Swift.print(" LIMIT \(limit)", terminator: "", to: &sql)
         }
+        return sql
+    }
+
+    func select(_ cols: [String], from table: String,
+                where test: String? = nil, limit: Int,
+                _ block: ((_ row: Row) throws -> ())) throws {
+        let sql = selectSQL(cols, from: table, where: test, limit: limit)
         try prepare(sql: sql).results(block)
     }
 

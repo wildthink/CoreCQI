@@ -43,6 +43,15 @@ public struct CQIConfig {
         var next = self
         for ndx in 0..<slots.count {
             if next.slots[ndx].property == prop {
+                // If there is a previous slot entry for the
+                // same column then we will use it's index
+                // to avoid duplicate columns in the SQL SELECT
+                if let col_ndx = index(ofColumn: col),
+                   col_ndx != next.slots[ndx].col_ndx
+                {
+                    next.slots[ndx].col_ndx = col_ndx
+                    next.slots[ndx].isMapped = true
+                }
                 next.slots[ndx].column = col
                 break
             }

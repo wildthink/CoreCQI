@@ -35,7 +35,7 @@ public struct EntityID
   ExpressibleByNilLiteral, ExpressibleByIntegerLiteral
 {
     let _value: Int64
-    var int64: Int64 { _value }
+    public var int64: Int64 { _value }
     
     public init(nilLiteral: ()) {
         _value = 0
@@ -48,5 +48,21 @@ public struct EntityID
     }
     public static func < (lhs: EntityID, rhs: EntityID) -> Bool {
         lhs._value < rhs._value
+    }
+}
+
+// MARK: Database Iterface
+import FeistyDB
+
+extension EntityID: DatabaseSerializable {
+    
+    public func serialized() -> DatabaseValue {
+        return .integer(self.int64)
+    }
+    
+    public static func deserialize(from value: DatabaseValue) throws -> Self {
+        guard case let DatabaseValue.integer(i64) = value
+        else { throw DatabaseError("Cannot deserialize \(value) into EntityID") }
+        return EntityID(i64)
     }
 }

@@ -32,7 +32,7 @@ public extension Database {
             Swift.print(" WHERE \(test)", terminator: "", to: &sql)
         }
         if limit > 0 {
-            sql = " LIMIT \(limit)"
+            Swift.print(" LIMIT \(limit)", terminator: "", to: &sql)
         }
         try prepare(sql: sql).results(block)
     }

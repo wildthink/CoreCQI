@@ -74,8 +74,8 @@ open class CQIAdaptor {
     
     public static var shared: CQIAdaptor?
     
-    var db: Database
-    var transformers: [String:NSValueTransformerName] = [:]
+    public var db: Database
+    public var transformers: [String:NSValueTransformerName] = [:]
     
     public init(inMemory: Bool = true) throws {
         try db = Database(inMemory: inMemory)
@@ -96,25 +96,27 @@ open class CQIAdaptor {
     // =====================================
 
     func create(_ info: TypeInfo, from row: Row, columns: [String]) throws -> Any {
+        
         var nob = try createInstance(of: info.type)
         
         for (ndx, col) in columns.enumerated() {
             let property = try info.property(named: col)
-            let value: Any?
-            let db_value = try row.value(at: ndx)
-            let pinfo = try typeInfo(of: property.type)
             var valueType: Any.Type = property.type
             
-            if pinfo.isOptional, let elementType = pinfo.elementType {
+            if property.isOptional,
+               let pinfo = try? typeInfo(of: property.type),
+               let elementType = pinfo.elementType {
                 valueType = elementType
             }
             // FIXME: Add the ability to use a ValueTransformer here
             // Actually will need to create a Swifty TypeTransformer
+            let db_value = try row.value(at: ndx)
+            let value: Any?
             if let factory = valueType as? DatabaseSerializable.Type
             {
                 value = try factory.deserialize(from: db_value)
             } else {
-                value = try row.value(at: ndx).anyValue
+                value = db_value.anyValue
             }
             try property.set(value: value as Any, on: &nob)
         }
@@ -140,6 +142,27 @@ open class CQIAdaptor {
                 .first
     }
     
+    public func select(_ type: Any.Type, from table: String? = nil,
+                          sorted_by: [String] = [],
+                          where: NSPredicate? = nil,
+                          limit: Int = 0) throws -> [Any] {
+        
+        // Using CQITypes enables a more robust interface to the underlying SQL/DB
+        // FIXME: Let's check and use the provided CQIType metadata
+        
+        let inf = try typeInfo(of: type)
+        let table = table ?? inf.name
+        let cols = inf.properties.map { $0.name }
+        
+        // FIXME: NOT yet using NSPredicate
+        var recs: [Any] = []
+        try db.select(cols, from: table, limit: limit) { row in
+            let nob = try create(inf, from: row, columns: cols)
+            recs.append(nob)
+        }
+        return recs
+    }
+
     public func select<T>(_ type: T.Type = T.self, from table: String? = nil,
                           sorted_by: [String] = [],
                           where: NSPredicate? = nil,
@@ -183,34 +206,99 @@ open class CQIAdaptor {
     
 }
 
-// MARK: Helpers
+// MARK: CQI Config SELECT
 
-public protocol StringRepresentable: Hashable, Codable, ExpressibleByStringLiteral,
-                                     Comparable,
-                                     CustomStringConvertible where StringLiteralType == String {
-    var value: String { set get }
-}
-
-public extension StringRepresentable {
+public extension CQIAdaptor {
     
-    var description: String { value }
-    
-    static func < (lhs: Self, rhs: Self) -> Bool {
-        lhs.value < rhs.value
-    }
-}
-
-@propertyWrapper
-public struct CQIValue<T> {
-    public private(set) var wrappedValue: T
-    public var id: Int64 = 0
-    public var projectedValue: CQIValue<T> { return self }
-    
-    public init(wrappedValue: T, id: Int64, in table: String? = nil)  {
-        self.wrappedValue = wrappedValue
+    func first<C: CQIEntity>(_ type: C.Type = C.self,
+               from table: String? = nil,
+               sorted_by: [String] = [],
+               where test: NSPredicate? = nil) throws -> C? {
+        try first(type.config, from: table, sorted_by: sorted_by, where: test) as? C
     }
     
-    public init(wrappedValue: T, from table: String? = nil, where test: String? = nil, limit: Int = 0)  {
-        self.wrappedValue = wrappedValue
+    func first(_ cfg: CQIConfig,
+                from table: String? = nil,
+                sorted_by: [String] = [],
+                where test: NSPredicate? = nil) throws -> Any? {
+        
+        let table = table ?? cfg.ename
+        let cols = cfg.slots.map { $0.column }
+        
+        // FIXME: NOT yet using Sort or NSPredicate
+        var record: Any?
+        try db.select(cols, from: table, limit: 1) { row in
+            record = try create(cfg, from: row)
+        }
+        return record
     }
+
+    func select<C: CQIEntity>(_ type: C.Type = C.self,
+                from table: String? = nil,
+                sorted_by sorts: [String] = [],
+                where test: NSPredicate? = nil,
+                limit: Int = 0) throws -> [C] {
+        try (select(type.config, from: table, sorted_by: sorts, where: test, limit: limit)
+                as? [C]) ?? []
+    }
+    
+    func select(_ cfg: CQIConfig,
+                from table: String? = nil,
+                sorted_by: [String] = [],
+                where: NSPredicate? = nil,
+                limit: Int = 0) throws -> [Any] {
+        
+        let table = table ?? cfg.ename
+        let cols = cfg.slots.map { $0.column }
+        
+        // FIXME: NOT yet using Sort or NSPredicate
+        var recs: [Any] = []
+        try db.select(cols, from: table, limit: limit) { row in
+            let nob = try create(cfg, from: row)
+            recs.append(nob)
+        }
+        return recs
+    }
+
+    func create(_ cfg: CQIConfig, from row: Row) throws -> Any {
+        
+        var nob = try createInstance(of: cfg.type)
+        
+        for (ndx, slot) in cfg.slots.enumerated() {
+            let property = try cfg.info.property(named: slot.property)
+            var valueType: Any.Type = property.type
+            
+            if property.isOptional,
+               let pinfo = try? typeInfo(of: property.type),
+               let elementType = pinfo.elementType {
+                valueType = elementType
+            }
+            // FIXME: Add the ability to use a ValueTransformer here
+            // Actually will need to create a Swifty TypeTransformer
+            let db_value = try row.value(at: ndx)
+            let value: Any?
+            if let factory = valueType as? DatabaseSerializable.Type
+            {
+                value = try factory.deserialize(from: db_value)
+            } else if let factory = valueType as? Decodable {
+                switch db_value {
+//                    case let DatabaseValue.blob(data):
+//                        value = factory.init
+//                        value = try JSONDecoder().decode(factory, from: data)
+                    case let DatabaseValue.text(str):
+                        guard let data = str.data(using: .utf8)
+                        else { throw DatabaseError("Cannot deserialize \(slot.column)") }
+                        value = try JSONSerialization.jsonObject(with: data, options: [])
+                    default:
+                        value = db_value.anyValue
+                }
+            }
+            else {
+                value = db_value.anyValue
+            }
+            try property.set(value: value as Any, on: &nob)
+        }
+        return nob
+    }
+
 }

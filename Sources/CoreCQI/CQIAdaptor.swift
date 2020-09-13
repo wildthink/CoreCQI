@@ -222,8 +222,8 @@ public extension CQIAdaptor {
                 sorted_by: [String] = [],
                 where test: NSPredicate? = nil) throws -> Any? {
         
-        let table = table ?? cfg.ename
-        let cols = cfg.slots.map { $0.column }
+        let table = table ?? cfg.table
+        let cols = cfg.columns()// cfg.slots.map { $0.column }
         
         // FIXME: NOT yet using Sort or NSPredicate
         var record: Any?
@@ -248,8 +248,8 @@ public extension CQIAdaptor {
                 where: NSPredicate? = nil,
                 limit: Int = 0) throws -> [Any] {
         
-        let table = table ?? cfg.ename
-        let cols = cfg.slots.filter({ !$0.isMapped }).map { $0.column }
+        let table = table ?? cfg.table
+        let cols = cfg.columns() // slots.filter({ !$0.isMapped }).map { $0.column }
         
         // FIXME: NOT yet using Sort or NSPredicate
         var recs: [Any] = []
@@ -265,8 +265,8 @@ public extension CQIAdaptor {
         var nob = try createInstance(of: cfg.type)
         
 //        for (ndx, slot) in cfg.slots.enumerated() {
-        for slot in cfg.slots {
-            let property = try cfg.info.property(named: slot.property)
+        for slot in cfg.slots where !slot.isExcluded {
+            let property = try cfg.info.property(named: slot.name)
             var valueType: Any.Type = property.type
             
             if property.isOptional,
@@ -298,6 +298,15 @@ public extension CQIAdaptor {
                 value = db_value.anyValue
             }
             try property.set(value: value as Any, on: &nob)
+        }
+        // FIXME: Is this a much of a performance hit in copying when
+        // the object is a `struct`
+        // Do we have a choice?
+        if var bob = nob as? CQIEntity {
+            bob.didInit()
+            return bob
+//            nob = e // in case nob is a struct
+//            Swift.print(#line, e, nob)
         }
         return nob
     }

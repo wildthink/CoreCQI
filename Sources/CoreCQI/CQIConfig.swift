@@ -11,6 +11,7 @@ import Runtime
 public protocol CQIEntity {
     static var config: CQIConfig { get }
     var id: EntityID { get }
+    mutating func didInit()
 }
 
 //extension CQIEntity: Indentifiable {}
@@ -21,63 +22,85 @@ public protocol CQIEntity {
  2.  Remove any dependent slots from the column list.
  3.  Add any map-from keys to col_list
  */
-public struct CQIConfig {
-    var ename: String
+public class CQIConfig {
+    var table: String
     var type: Any.Type
     var info: TypeInfo
-    var slots: [Slot] = []
+//    var columns: Set<String> = []
+    var slots: [Property] = []
     
     public init(_ name: String, type: Any.Type) throws {
-        self.ename = name
+        self.table = name
         self.type = type
         let ti = try typeInfo(of: type)
         self.info = ti
-        slots = ti.properties.enumerated().map { (n, c) in Slot(col: c.name, ndx: n) }
+        slots = ti.properties.map { Property($0.name) }
     }
     
     public func index(ofColumn col: String) -> Int? {
         slots.first { $0.column == col }?.col_ndx
     }
     
-    public func set(_ prop: String, from col: String) -> Self {
-        var next = self
+    /**
+     The method returns a unique set of database columns and updates the Slot.col_ndx
+     to correspond with its ordering
+     */
+    public func columns() -> [String] {
+        var cols: [String] = []
+
+        for ndx in 0..<slots.count where !slots[ndx].isExcluded {
+            if let col_ndx = cols.firstIndex(of: slots[ndx].column) {
+                slots[ndx].col_ndx = col_ndx
+            } else {
+                slots[ndx].col_ndx = cols.count
+                cols.append(slots[ndx].column)
+            }
+        }
+        return cols
+    }
+    
+    public func exclude(_ props: String...) -> Self {
+        
         for ndx in 0..<slots.count {
-            if next.slots[ndx].property == prop {
-                // If there is a previous slot entry for the
-                // same column then we will use it's index
-                // to avoid duplicate columns in the SQL SELECT
-                if let col_ndx = index(ofColumn: col),
-                   col_ndx != next.slots[ndx].col_ndx
-                {
-                    next.slots[ndx].col_ndx = col_ndx
-                    next.slots[ndx].isMapped = true
-                }
-                next.slots[ndx].column = col
+            if props.contains(slots[ndx].name) {
+                slots[ndx].column = ""
+                slots[ndx].col_ndx = -1
                 break
             }
         }
-        return next
+        return self
+    }
+    
+    public func set(_ prop: String, from col: String) -> Self {
+
+        for ndx in 0..<slots.count {
+            if slots[ndx].name == prop {
+                slots[ndx].column = col
+                break
+            }
+        }
+        return self
     }
 }
 
-struct Slot {
+struct Property {
+    var name: String
     var column: String
-    var property: String
     var col_ndx: Int
-    var isMapped: Bool = false // true if col == prop
+    var isExcluded: Bool { col_ndx < 0 }
+//    var isMapped: Bool = false // true if col == prop
     
-    init (col: String, ndx: Int, prop: String? = nil) {
-        column = col
+    init (_ name: String, col: String? = nil, ndx: Int = 0) {
+        self.name = name
+        column = col ?? name
         col_ndx = ndx
-        property = prop ?? col
     }
-//    var
 }
 
 //public extension CQIConfig {
 //
 //    init <E>(_ en: String, type: E.Type) {
-//        self.ename = en
+//        self.table = en
 //        self.type = E.self
 //        // FIXME: Do error handling
 //        info = try! typeInfo(of: type)
@@ -85,15 +108,14 @@ struct Slot {
 //}
 
 public extension CQIEntity {
-//    static func qtype() -> Self.Type { Self.self }
+
     static func Config(_ name: String? = nil, type: Self.Type = Self.self) -> CQIConfig {
-        let ename = name ?? String(describing: type)
-        return try! CQIConfig(ename, type: type)
+        let table = name ?? String(describing: type)
+        return try! CQIConfig(table, type: type)
     }
     
-//    static var Config: CQIConfig {
-//        CQIConfig(String(describing: Self.self), type: Self.self)
-//    }
+    func didInit() {
+    }
 }
 
 // MARK: Helpers

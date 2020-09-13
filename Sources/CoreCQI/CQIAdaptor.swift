@@ -264,7 +264,11 @@ public extension CQIAdaptor {
         
         var nob = try createInstance(of: cfg.type)
         
-//        for (ndx, slot) in cfg.slots.enumerated() {
+        if var bob = nob as? CQIEntity {
+            bob.preload()
+            nob = bob
+        }
+
         for slot in cfg.slots where !slot.isExcluded {
             let property = try cfg.info.property(named: slot.name)
             var valueType: Any.Type = property.type
@@ -303,10 +307,8 @@ public extension CQIAdaptor {
         // the object is a `struct`
         // Do we have a choice?
         if var bob = nob as? CQIEntity {
-            bob.didInit()
+            bob.postload()
             return bob
-//            nob = e // in case nob is a struct
-//            Swift.print(#line, e, nob)
         }
         return nob
     }

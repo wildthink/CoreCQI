@@ -11,7 +11,8 @@ import Runtime
 public protocol CQIEntity {
     static var config: CQIConfig { get }
     var id: EntityID { get }
-    mutating func didInit()
+    mutating func preload()
+    mutating func postload()
 }
 
 //extension CQIEntity: Indentifiable {}
@@ -114,8 +115,8 @@ public extension CQIEntity {
         return try! CQIConfig(table, type: type)
     }
     
-    func didInit() {
-    }
+    func preload() {}
+    func postload() {}
 }
 
 // MARK: Helpers

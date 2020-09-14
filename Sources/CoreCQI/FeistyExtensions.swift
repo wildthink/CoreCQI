@@ -23,13 +23,20 @@ public extension Row {
 }
 
 public extension Database {
+    typealias RowHandler = (_ row: Row) throws -> ()
+    enum Ordering { case asc(String), desc(String) }
     
     func selectSQL(_ cols: [String], from table: String,
-                where test: String? = nil, limit: Int) -> String
+                where test: String? = nil,
+                order_by: [Ordering]? = nil, limit: Int) -> String
     {
         var sql = "SELECT \(cols.joined(separator: ",")) FROM \(table)"
         if let test = test {
             Swift.print(" WHERE \(test)", terminator: "", to: &sql)
+        }
+        if let order = order_by?
+            .map({$0.description}).joined(separator: ",") {
+            Swift.print(" ORDER BY \(order)", terminator: "", to: &sql)
         }
         if limit > 0 {
             Swift.print(" LIMIT \(limit)", terminator: "", to: &sql)
@@ -37,13 +44,29 @@ public extension Database {
         return sql
     }
 
+    // select^ (_cols: [s], from: <table/s>, where: <test/s>?
+    //          order_by: [Ordering]? limit: i, ƒ: RowHandler)
+    
     func select(_ cols: [String], from table: String,
-                where test: String? = nil, limit: Int,
-                _ block: ((_ row: Row) throws -> ())) throws {
-        let sql = selectSQL(cols, from: table, where: test, limit: limit)
-        try prepare(sql: sql).results(block)
+                where test: String? = nil,
+                order_by: [Ordering]? = nil, limit: Int,
+                _ call: RowHandler) throws {
+        let sql = selectSQL(cols, from: table,
+                            where: test, order_by: order_by, limit: limit)
+        try prepare(sql: sql).results(call)
     }
 
+}
+
+extension Database.Ordering: CustomStringConvertible {
+    public var description: String {
+        switch self {
+            case let .asc(col):
+                return "\(col) ASC"
+            case let .desc(col):
+                return "\(col) DESC"
+        }
+    }
 }
 
 extension URL: DatabaseSerializable {
@@ -52,10 +75,11 @@ extension URL: DatabaseSerializable {
         return .text(self.description)
     }
     
+    // URL use init? so we provide example.com just in case
     public static func deserialize(from value: DatabaseValue) throws -> Self {
         guard case let DatabaseValue.text(str) = value
         else { throw DatabaseError("Cannot deserialize \(value) into URL") }
-        return URL(string: str)!
+        return URL(string: str) ?? URL(string: "http://example.com")!
     }
 }
 

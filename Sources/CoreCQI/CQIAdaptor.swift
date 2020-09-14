@@ -126,7 +126,7 @@ public extension CQIAdaptor {
     func first<C: CQIEntity>(_ type: C.Type = C.self,
                from table: String? = nil,
                where format: String? = nil, _ argv: Any...,
-               order_by: [Database.Ordering] = []
+               order_by: [Database.Ordering]? = nil
     )
     throws -> C? {
         if let format = format {
@@ -140,7 +140,7 @@ public extension CQIAdaptor {
     func first(_ cfg: CQIConfig,
                 from table: String? = nil,
                 where predicate: NSPredicate? = nil,
-                order_by: [Database.Ordering] = []
+                order_by: [Database.Ordering]? = nil
     ) throws -> Any? {
         
         let table = table ?? cfg.table
@@ -158,7 +158,7 @@ public extension CQIAdaptor {
     func select<C: CQIEntity>(_ type: C.Type = C.self,
                 from table: String? = nil,
                 where format: String? = nil, _ argv: Any...,
-                order_by: [Database.Ordering] = [],
+                order_by: [Database.Ordering]? = nil,
                 limit: Int = 0) throws -> [C] {
         
         if let format = format {
@@ -176,7 +176,7 @@ public extension CQIAdaptor {
     func select(_ cfg: CQIConfig,
                 from table: String? = nil,
                 where predicate: NSPredicate? = nil,
-                order_by: [Database.Ordering] = [],
+                order_by: [Database.Ordering]? = nil,
                 limit: Int = 0) throws -> [Any] {
         
         let table = table ?? cfg.table

@@ -5,9 +5,7 @@
 //  Copyright © 2020 Jason Jobe. All rights reserved.
 //  Created by Jason Jobe on 9/6/20.
 //
-
 import Foundation
-//import CSQLite
 import FeistyDB
 import FeistyExtensions
 
@@ -82,4 +80,20 @@ extension URL: DatabaseSerializable {
         return URL(string: str) ?? URL(string: "http://example.com")!
     }
 }
+
+// MARK: Database Iterface
+
+extension EntityID: DatabaseSerializable {
+    
+    public func serialized() -> DatabaseValue {
+        return .integer(self.int64)
+    }
+    
+    public static func deserialize(from value: DatabaseValue) throws -> Self {
+        guard case let DatabaseValue.integer(i64) = value
+        else { throw DatabaseError("Cannot deserialize \(value) into EntityID") }
+        return EntityID(i64)
+    }
+}
+
 

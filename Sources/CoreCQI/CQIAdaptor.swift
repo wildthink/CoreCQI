@@ -21,38 +21,6 @@ import CRuntime
   adaptor(select: S.Type,  sort_by: [pkey], where: predicate) throws -> [S]
  
  */
-
-/**
- Any  Struct or Class acting as a query model for CGI Data.
- 
- IDEAS:
- - include/exclude options
- - renaming slot <=> column
- - transformers (eg. name/URL to Image)
- - forrmatters
- - think carefully about reverse operations (e.g. Image ?-> name)
- - JSON Column vs JOIN relationships
- */
-public protocol CQIType {
-    static var CQIKeys: [CQI.PropertyKey] { get }
-    static func cqiQuery() throws -> CQI.Query
-}
-
-public struct CQI {
-    public struct PropertyKey: StringRepresentable {
-        public var value: String
-        public init(stringLiteral value: String) {
-            self.value = value
-        }
-    }
-    public struct Query: StringRepresentable {
-        public var value: String
-        public init(stringLiteral value: String) {
-            self.value = value
-        }
-    }
-}
-
 open class CQIAdaptor {
     
     public struct CQIError: Swift.Error {

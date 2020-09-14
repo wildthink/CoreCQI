@@ -8,15 +8,6 @@
 import Foundation
 import Runtime
 
-public protocol CQIEntity {
-    static var config: CQIConfig { get }
-    var id: EntityID { get }
-    mutating func preload()
-    mutating func postload()
-}
-
-//extension CQIEntity: Indentifiable {}
-
 /**
  The Config is built and modifiied following these steps.
  1.  Create a full list of available slots from the TypeInfo
@@ -27,7 +18,6 @@ public class CQIConfig {
     var table: String
     var type: Any.Type
     var info: TypeInfo
-//    var columns: Set<String> = []
     var slots: [Property] = []
     
     public init(_ name: String, type: Any.Type) throws {
@@ -98,16 +88,6 @@ struct Property {
     }
 }
 
-//public extension CQIConfig {
-//
-//    init <E>(_ en: String, type: E.Type) {
-//        self.table = en
-//        self.type = E.self
-//        // FIXME: Do error handling
-//        info = try! typeInfo(of: type)
-//    }
-//}
-
 public extension CQIEntity {
 
     static func Config(_ name: String? = nil, type: Self.Type = Self.self) -> CQIConfig {
@@ -115,25 +95,10 @@ public extension CQIEntity {
         return try! CQIConfig(table, type: type)
     }
     
+    static var config: CQIConfig { Config() }
+
     func preload() {}
     func postload() {}
-}
-
-// MARK: Helpers
-
-public protocol StringRepresentable: Hashable, Codable, ExpressibleByStringLiteral,
-                                     Comparable,
-                                     CustomStringConvertible where StringLiteralType == String {
-    var value: String { set get }
-}
-
-public extension StringRepresentable {
-    
-    var description: String { value }
-    
-    static func < (lhs: Self, rhs: Self) -> Bool {
-        lhs.value < rhs.value
-    }
 }
 
 @propertyWrapper

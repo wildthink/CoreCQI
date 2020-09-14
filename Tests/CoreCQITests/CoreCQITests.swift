@@ -3,7 +3,7 @@ import XCTest
 
 final class CoreCQITests: XCTestCase {
     
-    let dba = CQIAdaptor!
+    var dba: CQIAdaptor!
     
     override func setUpWithError() throws {
         dba = try CQIAdaptor(inMemory: true)
@@ -22,15 +22,18 @@ final class CoreCQITests: XCTestCase {
         try dba.exec(sql: sql)
     }
 
-    struct Person {
+    struct Person: DBEntity {
+        var id: EntityID
+        
         var given: String
         var family: String
         var age: Int
     }
     
-    func testQueries() {
-        let p: Person = dba.first()
-        print (p)
+    func testQueries() throws {
+        let p1: Person? = try dba.first()
+        let p2 = try dba.first(Person.self)
+        print (p1 as Any, p2)
     }
 
     static var allTests = [

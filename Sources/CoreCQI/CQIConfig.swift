@@ -56,7 +56,6 @@ public class CQIConfig {
             if props.contains(slots[ndx].name) {
                 slots[ndx].column = ""
                 slots[ndx].col_ndx = -1
-                break
             }
         }
         return self

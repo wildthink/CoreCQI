@@ -60,10 +60,22 @@ open class CQIAdaptor {
         try addExtensions()
     }
     
+    public var logErrors: Bool = true
+    
+    func log (_ error: Swift.Error, from caller: String = #function) {
+        guard logErrors else { return }
+        Swift.print(error)
+    }
+    
 // MARK: exec methos
 // =====================================
     public func exec(sql: String) throws {
-        try db.batch(sql: sql)
+        do {
+            try db.batch(sql: sql)
+        } catch {
+            log(error)
+            throw error
+        }
         //        guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
         //            throw SQLiteError("Error in execution", takingDescriptionFromDatabase: db)
         //        }
@@ -115,10 +127,15 @@ public extension CQIAdaptor {
         let cols = cfg.columns()// cfg.slots.map { $0.column }
         
         var record: Any?
-        try db.select(cols, from: table,
-                      where: predicate?.sql,
-                      order_by: order_by, limit: 1) { row in
-            record = try create(cfg, from: row)
+        do {
+            try db.select(cols, from: table,
+                          where: predicate?.sql,
+                          order_by: order_by, limit: 1) { row in
+                record = try create(cfg, from: row)
+            }
+        } catch {
+            log(error)
+            throw error
         }
         return record
     }
@@ -129,15 +146,20 @@ public extension CQIAdaptor {
                 order_by: [Database.Ordering]? = nil,
                 limit: Int = 0) throws -> [C] {
         
-        if let format = format {
-            let pred = NSPredicate(format: format, argumentArray: argv)
-            return try (select(type.config, from: table,
-                               where: pred, order_by: order_by, limit: limit)
-                    as? [C]) ?? []
-        } else {
-            return try (select(type.config, from: table,
-                               order_by: order_by, limit: limit)
-                    as? [C]) ?? []
+        do {
+            if let format = format {
+                let pred = NSPredicate(format: format, argumentArray: argv)
+                return try (select(type.config, from: table,
+                                   where: pred, order_by: order_by, limit: limit)
+                        as? [C]) ?? []
+            } else {
+                return try (select(type.config, from: table,
+                                   order_by: order_by, limit: limit)
+                        as? [C]) ?? []
+            }
+        } catch {
+            log(error)
+            throw error
         }
     }
     
@@ -151,10 +173,15 @@ public extension CQIAdaptor {
         let cols = cfg.columns()
         
         var recs: [Any] = []
-        try db.select(cols, from: table, where: predicate?.sql,
-                      order_by: order_by, limit: limit) { row in
-            let nob = try create(cfg, from: row)
-            recs.append(nob)
+        do {
+            try db.select(cols, from: table, where: predicate?.sql,
+                          order_by: order_by, limit: limit) { row in
+                let nob = try create(cfg, from: row)
+                recs.append(nob)
+            }
+        } catch {
+            log(error)
+            throw error
         }
         return recs
     }

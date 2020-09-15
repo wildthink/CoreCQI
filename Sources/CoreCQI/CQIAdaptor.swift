@@ -103,17 +103,18 @@ extension NSPredicate {
 
 public extension CQIAdaptor {
     
+    // Primary entry method
     func first<C: CQIEntity>(_ type: C.Type = C.self,
                from table: String? = nil,
                where format: String? = nil, _ argv: Any...,
                order_by: [Database.Ordering]? = nil
     )
-    throws -> C? {
+    -> C? {
         if let format = format {
             let pred = NSPredicate(format: format, argumentArray: argv)
-            return try first(type.config, from: table, where: pred, order_by: order_by) as? C
+            return try? first(type.config, from: table, where: pred, order_by: order_by) as? C
         } else {
-            return try first(type.config, from: table, order_by: order_by) as? C
+            return try? first(type.config, from: table, order_by: order_by) as? C
         }
     }
     
@@ -140,11 +141,12 @@ public extension CQIAdaptor {
         return record
     }
 
+    // Primary entry method for Collections
     func select<C: CQIEntity>(_ type: C.Type = C.self,
                 from table: String? = nil,
                 where format: String? = nil, _ argv: Any...,
                 order_by: [Database.Ordering]? = nil,
-                limit: Int = 0) throws -> [C] {
+                limit: Int = 0) -> [C] {
         
         do {
             if let format = format {
@@ -159,7 +161,7 @@ public extension CQIAdaptor {
             }
         } catch {
             log(error)
-            throw error
+            return []
         }
     }
     

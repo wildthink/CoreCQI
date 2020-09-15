@@ -31,8 +31,8 @@ final class CoreCQITests: XCTestCase {
     }
     
     func testQueries() throws {
-        let p1: Person? = try dba.first()
-        let p2 = try dba.first(Person.self)
+        let p1: Person? = dba.first()
+        let p2 = dba.first(Person.self)
         print (p1 as Any, p2)
     }
 

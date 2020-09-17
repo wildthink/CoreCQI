@@ -96,4 +96,32 @@ extension EntityID: DatabaseSerializable {
     }
 }
 
+public extension Encodable {
+    
+    func encodeToJSONData() throws -> Data {
+        try JSONEncoder().encode(self)
+    }
+    
+    func encodeToJSONText() throws -> String {
+        let data = try JSONEncoder().encode(self)
+        guard let str = String(data: data, encoding: .utf8)
+        else {
+            throw DatabaseError("\(Self.self) cannot be coverted to JSON")
+        }
+        return str
+    }
+}
+
+public extension Decodable {
+    
+    static func decodeFromJSON(data: Data) throws -> Self {
+        return try JSONDecoder().decode(Self.self, from: data)
+    }
+    
+    static func decodeFromJSON(text: String, encoding: String.Encoding = .utf8) throws -> Self {
+        let data = text.data(using: encoding)!
+        return try JSONDecoder().decode(Self.self, from: data)
+    }
+}
+
 

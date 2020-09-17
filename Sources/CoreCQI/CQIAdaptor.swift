@@ -214,19 +214,17 @@ public extension CQIAdaptor {
             {
                 value = try factory.deserialize(from: db_value)
             }
-//            else if let factory = valueType as? Decodable.Type {
-//                switch db_value {
-//                    case let DatabaseValue.blob(data):
-//                        let decoder = JSONDecoder()
-//                        let nob = try decoder.decode(factory, from: data)
-//                    case let DatabaseValue.text(str):
-//                        guard let data = str.data(using: .utf8)
-//                        else { throw DatabaseError("Cannot deserialize \(slot.column)") }
-//                        value = try JSONSerialization.jsonObject(with: data, options: [])
-//                    default:
-//                        value = db_value.anyValue
-//                }
-//            }
+            else if !property.sealed,
+                    let factory = valueType as? Decodable.Type {
+                switch db_value {
+                    case let DatabaseValue.blob(data):
+                        value = try factory.decodeFromJSON(data: data)
+                    case let DatabaseValue.text(str):
+                        value = try factory.decodeFromJSON(text: str)
+                    default:
+                        value = db_value.anyValue
+                }
+            }
             else {
                 value = db_value.anyValue
             }

@@ -210,7 +210,10 @@ public extension CQIAdaptor {
             // Actually will need to create a Swifty TypeTransformer
             let db_value = try row.value(at: slot.col_ndx)
             let value: Any?
-            if let factory = valueType as? DatabaseSerializable.Type
+            if case .null = db_value {
+                value = nil
+            }
+            else if let factory = valueType as? DatabaseSerializable.Type
             {
                 value = try factory.deserialize(from: db_value)
             }

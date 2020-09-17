@@ -124,4 +124,24 @@ public extension Decodable {
     }
 }
 
-
+extension DatabaseSerializable where Self: Codable {
+    
+    public func serialized() -> DatabaseValue {
+        if let data = try? JSONEncoder().encode(self),
+           let str = String(data: data, encoding: .utf8) {
+            return .text(str)
+        }
+        return .null
+    }
+    
+    public static func deserialize(from value: DatabaseValue) throws -> Self {
+        switch value {
+            case .blob(let data):
+                return try Self.decodeFromJSON(data: data)
+            case .text(let str):
+                return try Self.decodeFromJSON(text: str, encoding: .utf8)
+            default:
+                throw DatabaseError("\(value) is NOT JSON decodable")
+        }
+    }
+}

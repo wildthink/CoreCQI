@@ -190,12 +190,13 @@ public extension CQIAdaptor {
 
     func create(_ cfg: CQIConfig, from row: Row) throws -> Any {
         
-        var nob = try createInstance(of: cfg.type)
+        guard var nob = try createInstance(of: cfg.type) as? CQIEntity
+        else { throw CQIError() }
         
-        if var bob = nob as? CQIEntity {
-            bob.preload()
-            nob = bob
-        }
+//        if var bob = nob as? CQIEntity {
+//            bob.preload()
+//            nob = bob
+//        }
 
         for slot in cfg.slots where !slot.isExcluded {
             let property = try cfg.info.property(named: slot.name)
@@ -234,13 +235,35 @@ public extension CQIAdaptor {
             try property.set(value: value as Any, on: &nob)
         }
         // FIXME: Is this a much of a performance hit in copying when
-        // the object is a `struct`
+        // the object is a `struct`?
         // Do we have a choice?
-        if var bob = nob as? CQIEntity {
-            bob.postload()
-            return bob
-        }
+//        if var bob = nob as? CQIEntity {
+//            bob.postload()
+//            return bob
+//        }
+        nob.postload()
         return nob
     }
+}
 
+public extension CQIAdaptor {
+
+    @discardableResult
+    func update<E: CQIEntity>(_ nob: E) throws -> Int64 {
+        
+        let cfg = E.config
+        var cols: [String] = []
+        var values: [ParameterBindable?] = []
+
+        for slot in cfg.slots where !slot.isExcluded {
+            let property = try cfg.info.property(named: slot.name)
+            cols.append(slot.column)
+            try values.append(property.get(from: nob) as? ParameterBindable)
+//            var valueType: Any.Type = property.type
+        }
+        let sql = db.updateSQL(cfg.table, cols: cols)
+        print (sql)
+        try db.update(cfg.table, cols: cols, to: values)
+        return db.lastInsertRowid ?? nob.id._value
+    }
 }

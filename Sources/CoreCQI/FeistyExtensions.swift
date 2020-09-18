@@ -54,6 +54,27 @@ public extension Database {
         try prepare(sql: sql).results(call)
     }
 
+    //MARK: Update SQL
+    // https://www.sqlite.org/rowvalue.html
+    
+    func updateSQL(_ table: String, cols: [String]) -> String {
+        // NOTE: cols.count -2 is used to avoid the trailing ','
+        let colv = "(\(cols.joined(separator: ",")))"
+        var argv = ""
+        for ndx in 1..<cols.count {
+            Swift.print("?\(ndx),", terminator: "", to: &argv)
+        }
+//        let argv = "(\(String(repeating: "?,", count: cols.count - 2)) ?)"
+        return "UPDATE \(table) SET \(colv) = \(argv) WHERE \(colv) != \(argv)"
+    }
+    
+    func update(_ table: String, cols: [String], to values: [ParameterBindable?]) throws {
+        let sql = updateSQL(table, cols: cols)
+        let statement = try prepare(sql: sql)
+        try statement.bind(parameterValues: values)
+        try statement.execute()
+    }
+
 }
 
 extension Database.Ordering: CustomStringConvertible {
@@ -73,7 +94,7 @@ extension URL: DatabaseSerializable {
         return .text(self.description)
     }
     
-    // URL use init? so we provide example.com just in case
+    // URL uses init? so we provide example.com just in case
     public static func deserialize(from value: DatabaseValue) throws -> Self {
         guard case let DatabaseValue.text(str) = value
         else { throw DatabaseError("Cannot deserialize \(value) into URL") }

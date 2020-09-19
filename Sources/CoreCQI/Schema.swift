@@ -41,7 +41,6 @@ public extension Schema {
             return []
         }
     }
-
 }
 
 protocol BlockConvertable {
@@ -73,12 +72,6 @@ extension Array: BlockConvertable where Element == Schema.Block {
 }
 
 
-public struct EntityInfo {
-    func asSchemaBlocks() -> [Schema.Block] {
-        []
-    }
-}
-
 extension String: BlockConvertable {
     func asSchemaBlocks() -> [Schema.Block] {
         trace()
@@ -97,7 +90,10 @@ extension String: BlockConvertable {
 /**
  Options:
  Entity
+ - includes (Freebase style type inclusion)
+ - The Base Entity is included by other Entities
  Property
+ - DB storage format (e.g. TEXT, INTEGER, ...)
  - Formatter/Transformer
     - Date
     - URL <-> String
@@ -112,10 +108,100 @@ extension String: BlockConvertable {
     - [String: Any]
  */
 
+public struct EntityInfo {
+    func asSchemaBlocks() -> [Schema.Block] {
+        []
+    }
+}
+
+struct Column: BlockConvertable {
+    
+    var name: String
+    var column: String
+    var memo: String?
+    var unique: Bool = false
+    var primaryKey: Bool = false
+    
+//    var columnType: Any.Type
+//    var valueType: Any.Type
+//    var transformer: () -> Void
+    func asSchemaBlocks() -> [Schema.Block] { [] }
+}
+
+extension Column {
+    
+    init (_ name: String, as col: String? = nil, primaryKey: Bool = false,
+          memo: String? = nil) {
+        self.name = name
+        self.column = col ?? name
+        self.primaryKey = primaryKey
+        self.memo = memo
+    }
+
+    // init(_ name: String?, ref key: String) // refers to a previously defined Column
+    
+    func memo(_ text: String) -> Self {
+        var me = self
+        me.memo = text
+        return me
+    }
+}
+
+struct Table: BlockConvertable {
+    typealias Block = Schema.Block
+    var name: String
+    var blocks: [Block]
+    func asSchemaBlocks() -> [Schema.Block] { blocks }
+    
+    init(_ name: String,
+         @Schema.Builder builder: () -> [Block]) {
+        self.name = name
+        self.blocks = builder()
+    }
+    
+    init(ref: String) {
+        self.name = ref
+        self.blocks = []
+    }
+}
+
+@_functionBuilder
+struct Prop {
+    static func buildBlock() -> [Schema.Block] {
+        trace()
+        return []
+    }
+}
+
+@_functionBuilder
+struct Relationship {
+    static func buildBlock() -> [Schema.Block] {
+        trace()
+        return []
+    }
+}
+
+//protocol Funky {
+//    @Relationship var link: [Schema.Block] { get }
+//}
+
+
+func include(table: String) -> [Schema.Block] {
+    Table(ref: table).asSchemaBlocks()
+}
+
 func demoSchema() {
+    typealias T_ = Table
+    
     let schema = Schema(name: "demo") {
-        "alpha"
-        Schema.Block(value: 23)
+        Column("dob")
+            .memo("Date of Birth")
+        Table ("Base") {
+            Column("id", primaryKey: true)
+        }
+        T_("Fact") {
+            include(table: "Base")
+        }
     }
     
     Swift.print(schema)

@@ -249,21 +249,66 @@ public extension CQIAdaptor {
 public extension CQIAdaptor {
 
     @discardableResult
-    func update<E: CQIEntity>(_ nob: E) throws -> Int64 {
-        
+    func delete<E: CQIEntity>(_ nob: E) throws -> Int {
+        try db.delete(from: E.config.table, where: "id = \(nob.id)")
+        return db.changes
+    }
+    
+    func delete(all type: CQIEntity.Type)
+    throws -> Int
+    {
+        try db.delete(from: type.config.table, where: "", confirmAll: true)
+        return db.changes
+    }
+
+    func delete(any type: CQIEntity.Type, where format: String, _ argv: Any...)
+    throws -> Int
+    {
+        let pred = NSPredicate(format: format, argumentArray: argv)
+        try db.delete(from: type.config.table, where: pred.sql)
+        return db.changes
+    }
+
+    func columnsAndValues<E: CQIEntity>(_ nob: E) throws -> ([String], [ParameterBindable?]) {
         let cfg = E.config
         var cols: [String] = []
         var values: [ParameterBindable?] = []
-
-        for slot in cfg.slots where !slot.isExcluded {
+        
+        for slot in cfg.slots where slot.includeInFetch {
             let property = try cfg.info.property(named: slot.name)
             cols.append(slot.column)
             try values.append(property.get(from: nob) as? ParameterBindable)
-//            var valueType: Any.Type = property.type
         }
-        let sql = db.updateSQL(cfg.table, cols: cols)
-        print (sql)
-        try db.update(cfg.table, cols: cols, to: values)
-        return db.lastInsertRowid ?? nob.id._value
+        return (cols, values)
+     }
+
+    @discardableResult
+    func insert<E: CQIEntity>(_ nob: E) throws -> Int64 {
+        // guard nob.id == nil else { throw }
+        let (cols, values) = try columnsAndValues(nob)
+        try db.insert(E.config.table, cols: cols, to: values)
+        return db.lastInsertRowid ?? nob.id
+    }
+
+    @discardableResult
+    func update<E: CQIEntity>(_ nob: E) throws -> Int {
+        // guard nob.id != nil else { throw }
+        let (cols, values) = try columnsAndValues(nob)
+        try db.update(E.config.table, cols: cols, to: values)
+        return db.changes
+    }
+
+    func upsert<E: CQIEntity>(_ nob: inout E) throws {
+        
+        let cfg = E.config
+        let (cols, values) = try columnsAndValues(nob)
+        if nob.id == 0 {
+            try db.insert(cfg.table, cols: cols, to: values)
+            if let rowid = db.lastInsertRowid {
+                nob.id = EntityID(rowid)
+            }
+        } else {
+            try db.update(cfg.table, cols: cols, to: values)
+        }
     }
 }

@@ -23,7 +23,13 @@ public class Counter {
     }
 }
 
+public typealias EntityID = Int64
 
+public extension EntityID {
+    var int64: Int64 { self }
+}
+
+/*
 public extension EntityID {
     init (_ counter: Counter) {
         _value = counter.next()
@@ -50,3 +56,4 @@ public struct EntityID
         lhs._value < rhs._value
     }
 }
+*/

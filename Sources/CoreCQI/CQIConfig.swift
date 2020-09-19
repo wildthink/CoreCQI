@@ -15,17 +15,20 @@ import Runtime
  3.  Add any map-from keys to col_list
  */
 public class CQIConfig {
+    public typealias OwnerType = CQIEntity.Type
+    
     var table: String
-    var type: Any.Type
+    var type: OwnerType
     var info: TypeInfo
     var slots: [Property] = []
     
-    public init(_ name: String, type: Any.Type) throws {
+    public init(_ name: String, type: OwnerType) throws {
         self.table = name
         self.type = type
         let ti = try typeInfo(of: type)
         self.info = ti
         slots = ti.properties.map { Property($0.name) }
+        updateColumnInfo()
     }
     
     public func index(ofColumn col: String) -> Int? {
@@ -36,18 +39,34 @@ public class CQIConfig {
      The method returns a unique set of database columns and updates the Slot.col_ndx
      to correspond with its ordering
      */
-    public func columns() -> [String] {
+    func updateColumnInfo() {
         var cols: [String] = []
-
+        
         for ndx in 0..<slots.count where !slots[ndx].isExcluded {
             if let col_ndx = cols.firstIndex(of: slots[ndx].column) {
                 slots[ndx].col_ndx = col_ndx
+                slots[ndx].isDuplicateColumn = true
             } else {
                 slots[ndx].col_ndx = cols.count
                 cols.append(slots[ndx].column)
             }
         }
-        return cols
+    }
+    
+    public func columns() -> [String] {
+        slots.filter { $0.includeInFetch }.map { $0.column }
+//        var cols: [String] = []
+//
+//        for ndx in 0..<slots.count where !slots[ndx].isExcluded {
+//            if let col_ndx = cols.firstIndex(of: slots[ndx].column) {
+//                slots[ndx].col_ndx = col_ndx
+//                slots[ndx].isDuplicateColumn = true
+//            } else {
+//                slots[ndx].col_ndx = cols.count
+//                cols.append(slots[ndx].column)
+//            }
+//        }
+//        return cols
     }
     
     public func exclude(_ props: String...) -> Self {
@@ -58,6 +77,7 @@ public class CQIConfig {
                 slots[ndx].col_ndx = -1
             }
         }
+        updateColumnInfo()
         return self
     }
     
@@ -69,21 +89,27 @@ public class CQIConfig {
                 break
             }
         }
+        updateColumnInfo()
         return self
     }
 }
 
-struct Property {
+struct Property: CustomStringConvertible {
     var name: String
     var column: String
     var col_ndx: Int
+    var isDuplicateColumn: Bool = false // true if column was previously used
     var isExcluded: Bool { col_ndx < 0 }
-//    var isMapped: Bool = false // true if col == prop
+    var includeInFetch: Bool { !isDuplicateColumn && !isExcluded }
     
     init (_ name: String, col: String? = nil, ndx: Int = 0) {
         self.name = name
         column = col ?? name
         col_ndx = ndx
+    }
+    
+    var description: String {
+        "Slot (\(col_ndx):\(column) -> \(name) fetch:\(includeInFetch)"
     }
 }
 

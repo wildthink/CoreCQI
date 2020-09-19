@@ -57,15 +57,38 @@ public extension Database {
     //MARK: Update SQL
     // https://www.sqlite.org/rowvalue.html
     
-    func updateSQL(_ table: String, cols: [String]) -> String {
-        // NOTE: cols.count -2 is used to avoid the trailing ','
-        let colv = "(\(cols.joined(separator: ",")))"
+    // WARNING: ?1 parameter MUST be the id so it IS SKIPPED herein
+    func sqlRowValues(cols: [String]) -> (String, String) {
+        var colv = ""
         var argv = ""
-        for ndx in 1..<cols.count {
+        for ndx in 2 ..< cols.count {
             Swift.print("?\(ndx),", terminator: "", to: &argv)
+            Swift.print("\(cols[ndx - 1]),", terminator: "", to: &colv)
         }
-//        let argv = "(\(String(repeating: "?,", count: cols.count - 2)) ?)"
-        return "UPDATE \(table) SET \(colv) = \(argv) WHERE \(colv) != \(argv)"
+        // Add the last one WITHOUT the trailing comma
+        Swift.print("?\(cols.count)", terminator: "", to: &argv)
+        Swift.print("\(cols[cols.count - 1])", terminator: "", to: &colv)
+        return(colv, argv)
+     }
+    
+    // WARNING: ?1 parameter MUST be the id
+    func updateSQL(_ table: String, cols: [String]) -> String {
+//        var colv = ""
+//        var argv = ""
+//        for ndx in 2 ..< cols.count {
+//            Swift.print("?\(ndx),", terminator: "", to: &argv)
+//            Swift.print("\(cols[ndx - 1]),", terminator: "", to: &colv)
+//        }
+//        // Add the last one WITHOUT the trailing comma
+//        Swift.print("?\(cols.count)", terminator: "", to: &argv)
+//        Swift.print("\(cols[cols.count - 1])", terminator: "", to: &colv)
+        
+        let (colv, argv) = sqlRowValues(cols: cols)
+        return """
+            UPDATE \(table)
+            SET (\(colv)) = (\(argv))
+            WHERE \(cols[0]) = ?1 AND (\(colv)) != (\(argv))
+            """
     }
     
     func update(_ table: String, cols: [String], to values: [ParameterBindable?]) throws {
@@ -74,7 +97,18 @@ public extension Database {
         try statement.bind(parameterValues: values)
         try statement.execute()
     }
-
+    
+    func insertSQL(_ table: String, cols: [String]) -> String {
+        let (colv, argv) = sqlRowValues(cols: cols)
+        return "INSERT INTO \(table) (\(colv)) VALUES (\(argv))"
+    }
+    
+    func insert(_ table: String, cols: [String], to values: [ParameterBindable?]) throws {
+        let sql = insertSQL(table, cols: cols)
+        let statement = try prepare(sql: sql)
+        try statement.bind(parameterValues: values)
+        try statement.execute()
+    }
 }
 
 extension Database.Ordering: CustomStringConvertible {
@@ -107,7 +141,7 @@ extension URL: DatabaseSerializable {
 extension EntityID: DatabaseSerializable {
     
     public func serialized() -> DatabaseValue {
-        return .integer(self.int64)
+        return .integer(self)
     }
     
     public static func deserialize(from value: DatabaseValue) throws -> Self {

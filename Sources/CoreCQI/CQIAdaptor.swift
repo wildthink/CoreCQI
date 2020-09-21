@@ -11,7 +11,6 @@ import Foundation
 import FeistyDB
 import FeistyExtensions
 import Runtime
-import CRuntime
 
 /**
  @DomainObject(id: 2) var nob: NobStruct

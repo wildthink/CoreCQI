@@ -27,7 +27,7 @@ public class CQIConfig {
         self.type = type
         let ti = try typeInfo(of: type)
         self.info = ti
-        slots = ti.properties.map { Property($0.name) }
+        slots = ti.properties.map { Property($0.name, info: $0) }
         updateColumnInfo()
     }
     
@@ -98,14 +98,16 @@ struct Property: CustomStringConvertible {
     var name: String
     var column: String
     var col_ndx: Int
+    var info: PropertyInfo
     var isDuplicateColumn: Bool = false // true if column was previously used
     var isExcluded: Bool { col_ndx < 0 }
     var includeInFetch: Bool { !isDuplicateColumn && !isExcluded }
     
-    init (_ name: String, col: String? = nil, ndx: Int = 0) {
+    init (_ name: String, col: String? = nil, info: PropertyInfo, ndx: Int = 0) {
         self.name = name
         column = col ?? name
         col_ndx = ndx
+        self.info = info
     }
     
     var description: String {

@@ -44,6 +44,16 @@ open class CQIAdaptor {
     public var db: Database
     public var transformers: [String:NSValueTransformerName] = [:]
     
+    public init(rawSQLiteDatabase dbc: SQLiteDatabaseConnection) throws {
+        db = Database(rawSQLiteDatabase: dbc)
+        try addExtensions()
+    }
+    
+    public init(database: Database) throws {
+        db = database
+        try addExtensions()
+    }
+
     public init(inMemory: Bool = true) throws {
         try db = Database(inMemory: inMemory)
         try addExtensions()

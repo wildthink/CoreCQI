@@ -81,6 +81,10 @@ public class CQIConfig {
         return self
     }
     
+    public func derive(_ prop: String, from: String...) -> Self {
+        set(prop, from: "")
+    }
+
     public func set(_ prop: String, from col: String) -> Self {
 
         for ndx in 0..<slots.count {
@@ -101,7 +105,7 @@ struct Property: CustomStringConvertible {
     var info: PropertyInfo
     var isDuplicateColumn: Bool = false // true if column was previously used
     var isExcluded: Bool { col_ndx < 0 }
-    var includeInFetch: Bool { !isDuplicateColumn && !isExcluded }
+    var includeInFetch: Bool { !isDuplicateColumn && !isExcluded && column != "" }
     
     init (_ name: String, col: String? = nil, info: PropertyInfo, ndx: Int = 0) {
         self.name = name

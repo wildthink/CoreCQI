@@ -42,10 +42,13 @@ open class CQIAdaptor {
     public static var shared: CQIAdaptor?
     
     public var db: Database
+    public var name: String?
+    
     public var transformers: [String:NSValueTransformerName] = [:]
     
-    public init(rawSQLiteDatabase dbc: SQLiteDatabaseConnection) throws {
+    public init(name: String?, rawSQLiteDatabase dbc: SQLiteDatabaseConnection) throws {
         db = Database(rawSQLiteDatabase: dbc)
+        self.name = name
         try addExtensions()
     }
     
@@ -85,9 +88,6 @@ open class CQIAdaptor {
             log(error)
             throw error
         }
-        //        guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
-        //            throw SQLiteError("Error in execution", takingDescriptionFromDatabase: db)
-        //        }
     }
     
     public func exec (contentsOfFile file: String) throws {
@@ -96,8 +96,6 @@ open class CQIAdaptor {
     }
     
     open func addExtensions() throws {
-//        try db.addAggregateFunction("min_meter", LevelMeter(mode: .min))
-//        try db.addModule("cal", type: CalendarModule.self)
     }
     
 }
@@ -106,6 +104,94 @@ extension NSPredicate {
     var sql: String {
         description.replacingOccurrences(of: "\"", with: "'")
     }
+}
+
+// MARK: CQI Tuples by SELECT
+extension NSPredicate {
+    
+    convenience init?(format: String?, argv: [Any]) {
+        guard let format = format else { return nil }
+        self.init(format: format, argumentArray: argv)
+    }
+}
+
+public extension CQIAdaptor {
+    typealias DS = DatabaseSerializable
+    
+    func select<A: DS>(_ col: String, from table: String,
+                      where format: String? = nil, _ argv: Any...,
+                      order_by: [Database.Ordering]? = nil) -> [A] {
+        var records: [A] = []
+        do {
+            try db.select([col], from: table,
+                          where: NSPredicate(format: format, argv: argv)?.sql,
+                          order_by: order_by, limit: 1) { row in
+                let rec = try A.deserialize(from: row[0])
+                records.append(rec)
+            }
+        } catch {
+            log(error)
+        }
+        return records
+    }
+
+    func first<A: DS>(_ col: String, from table: String,
+                      where format: String? = nil, _ argv: Any...,
+                      order_by: [Database.Ordering]? = nil) -> A? {
+        var record: A?
+        do {
+            try db.select([col], from: table,
+                          where: NSPredicate(format: format, argv: argv)?.sql,
+                          order_by: order_by, limit: 1) { row in
+                record = try A.deserialize(from: row[0])
+            }
+        } catch {
+            log(error)
+        }
+        return record
+    }
+    
+    func first<A:DS, B:DS>(_ cols: [String], from table: String,
+                      where format: String? = nil, _ argv: Any...,
+                      order_by: [Database.Ordering]? = nil) -> (A?, B?)? {
+        var record: (A?, B?)?
+        do {
+            try db.select(cols, from: table,
+                          where: NSPredicate(format: format, argv: argv)?.sql,
+                          order_by: order_by, limit: 1) { row in
+                record = (
+                    try A.deserialize(from: row[0]),
+                    try B.deserialize(from: row[1])
+                )
+            }
+        } catch {
+            log(error)
+        }
+        return record
+    }
+
+    func first<A:DS, B:DS, C:DS>
+        (_ cols: [String], from table: String,
+         where format: String? = nil, _ argv: Any...,
+         order_by: [Database.Ordering]? = nil) -> (A?, B?, C?)?
+    {
+        var record: (A?, B?, C?)?
+        do {
+            try db.select(cols, from: table,
+                          where: NSPredicate(format: format, argv: argv)?.sql,
+                          order_by: order_by, limit: 1) { row in
+                record = (
+                    try A.deserialize(from: row[0]),
+                    try B.deserialize(from: row[1]),
+                    try C.deserialize(from: row[2])
+                )
+            }
+        } catch {
+            log(error)
+        }
+        return record
+    }
+
 }
 
 // MARK: CQI Config SELECT
@@ -197,20 +283,26 @@ public extension CQIAdaptor {
         return recs
     }
 
-    func create(_ cfg: CQIConfig, from row: Row) throws -> Any {
+    func create(_ cfg: CQIConfig, from row: Row, useColName: Bool = true) throws -> Any {
         
         guard var nob = try createInstance(of: cfg.type) as? CQIEntity
         else { throw CQIError() }
         
-//        if var bob = nob as? CQIEntity {
-//            bob.preload()
-//            nob = bob
-//        }
-
         for slot in cfg.slots where !slot.isExcluded {
-            let property = try cfg.info.property(named: slot.name)
+//            let property = try cfg.info.property(named: slot.name)
+            let property = slot.info
             var valueType: Any.Type = property.type
             
+            if let factory = valueType as? CQIEntity.Type {
+                // FIXME: Is it necessary/desirable that a sub structure
+                // be required to be a CQIEntity?
+                // ALSO The column name and indexes need to be
+                // re/mapped to the current row definition
+                let value = try create(factory.config, from: row, useColName: true)
+                try property.set(value: value as Any, on: &nob)
+                continue
+            }
+
             if property.isOptional,
                let pinfo = try? typeInfo(of: property.type),
                let elementType = pinfo.elementType {
@@ -218,11 +310,25 @@ public extension CQIAdaptor {
             }
             // FIXME: Add the ability to use a ValueTransformer here
             // Actually will need to create a Swifty TypeTransformer
-            let db_value = try row.value(at: slot.col_ndx)
+            // Using the slot.column (a String) is more convenient
+            // programatically but not as performant
+            // Currently Nested types that use multiple columns
+            // will use the string as a key cuz mapping the sub-ndx
+            // is problematic and likely to not be any faster
+            let db_value = useColName
+                ? try row.value(named: slot.column)
+                : try row.value(at: slot.col_ndx)
             let value: Any?
             if case .null = db_value {
                 value = nil
             }
+//            else if let factory = valueType as? CQIEntity.Type {
+//                // FIXME: Is it necessary/desirable that a sub structure
+//                // be required to be a CQIEntity?
+//                // ALSO The column name and indexes need to be
+//                // re/mapped to the current row definition
+//                value = try create(factory.config, from: row, useColName: true)
+//            }
             else if let factory = valueType as? DatabaseSerializable.Type
             {
                 value = try factory.deserialize(from: db_value)
@@ -243,13 +349,6 @@ public extension CQIAdaptor {
             }
             try property.set(value: value as Any, on: &nob)
         }
-        // FIXME: Is this a much of a performance hit in copying when
-        // the object is a `struct`?
-        // Do we have a choice?
-//        if var bob = nob as? CQIEntity {
-//            bob.postload()
-//            return bob
-//        }
         nob.postload()
         return nob
     }

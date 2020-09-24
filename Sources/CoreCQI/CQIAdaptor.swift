@@ -304,12 +304,14 @@ public extension CQIAdaptor {
             // Using the slot.column (a String) is more convenient
             // programatically but not as performant as ndx could be(?)
             
-            // NOTE: Branch on single column vs multi-column
-            // derived props which should be handled as CQIStruct above
             let db_value = try row.value(named: slot.columns[0])
             let value: Any?
-            
+
             switch valueType {
+
+                case _ where db_value.isNull:
+                    value = nil
+    
                 case is String.Type:
                     value = db_value.stringValue
                     
@@ -319,14 +321,11 @@ public extension CQIAdaptor {
                 case let f as CQIStruct.Type:
                     value = try create(f.config, from: row)
                     
-                case let f as DatabaseSerializable.Type:
-                    value = db_value.isNull ? nil : try f.deserialize(from: db_value)
-                    
-                case let f as Decodable.Type:
-                    if property.sealed {
-                        value = db_value.anyValue
-                        break
-                    }
+                case let f as DatabaseSerializable.Type where !db_value.isNull:
+                    value = try f.deserialize(from: db_value)
+
+                case let f as Decodable.Type where !property.sealed:
+
                     switch db_value {
                         case .null:
                             value = nil

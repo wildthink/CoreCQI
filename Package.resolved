@@ -12,11 +12,20 @@
       },
       {
         "package": "Runtime",
-        "repositoryURL": "https://github.com/wickwirew/Runtime",
+        "repositoryURL": "https://github.com/wildthink/Runtime",
         "state": {
           "branch": "master",
-          "revision": "af47521ae990ffde6558537960cf9388fe183f07",
+          "revision": "b13f5ecc3865f294ebfbe724309070b8550edd62",
           "version": null
+        }
+      },
+      {
+        "package": "Time",
+        "repositoryURL": "https://github.com/davedelong/Time",
+        "state": {
+          "branch": null,
+          "revision": "d8a3557205a895bb130a17148517c9f9f7136b5f",
+          "version": "0.9.1"
         }
       }
     ]

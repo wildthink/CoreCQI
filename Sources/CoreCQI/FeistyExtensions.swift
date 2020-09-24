@@ -20,6 +20,11 @@ public extension Row {
     }
 }
 
+public extension DatabaseValue {
+    static var yes: DatabaseValue { .integer(1) }
+    static var no: DatabaseValue { .integer(0) }
+}
+
 public extension Database {
     typealias RowHandler = (_ row: Row) throws -> ()
     enum Ordering { case asc(String), desc(String) }

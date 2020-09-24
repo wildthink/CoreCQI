@@ -283,69 +283,65 @@ public extension CQIAdaptor {
         return recs
     }
 
-    func create(_ cfg: CQIConfig, from row: Row, useColName: Bool = true) throws -> Any {
+    func create(_ cfg: CQIConfig, from row: Row) throws -> Any {
         
-        guard var nob = try createInstance(of: cfg.type) as? CQIEntity
-        else { throw CQIError() }
+        guard var nob = try createInstance(of: cfg.type) as? CQIStruct
+        else { throw CQIError("Unable to createInstance of \(cfg.type)") }
         
         for slot in cfg.slots where !slot.isExcluded {
-//            let property = try cfg.info.property(named: slot.name)
+            
             let property = slot.info
             var valueType: Any.Type = property.type
             
-            if let factory = valueType as? CQIEntity.Type {
-                // FIXME: Is it necessary/desirable that a sub structure
-                // be required to be a CQIEntity?
-                // ALSO The column name and indexes need to be
-                // re/mapped to the current row definition
-                let value = try create(factory.config, from: row, useColName: true)
-                try property.set(value: value as Any, on: &nob)
-                continue
-            }
-
             if property.isOptional,
                let pinfo = try? typeInfo(of: property.type),
                let elementType = pinfo.elementType {
                 valueType = elementType
             }
+
             // FIXME: Add the ability to use a ValueTransformer here
             // Actually will need to create a Swifty TypeTransformer
             // Using the slot.column (a String) is more convenient
-            // programatically but not as performant
-            // Currently Nested types that use multiple columns
-            // will use the string as a key cuz mapping the sub-ndx
-            // is problematic and likely to not be any faster
-            let db_value = useColName
-                ? try row.value(named: slot.column)
-                : try row.value(at: slot.col_ndx)
+            // programatically but not as performant as ndx could be(?)
+            
+            // NOTE: Branch on single column vs multi-column
+            // derived props which should be handled as CQIStruct above
+            let db_value = try row.value(named: slot.columns[0])
             let value: Any?
-            if case .null = db_value {
-                value = nil
-            }
-//            else if let factory = valueType as? CQIEntity.Type {
-//                // FIXME: Is it necessary/desirable that a sub structure
-//                // be required to be a CQIEntity?
-//                // ALSO The column name and indexes need to be
-//                // re/mapped to the current row definition
-//                value = try create(factory.config, from: row, useColName: true)
-//            }
-            else if let factory = valueType as? DatabaseSerializable.Type
-            {
-                value = try factory.deserialize(from: db_value)
-            }
-            else if !property.sealed,
-                    let factory = valueType as? Decodable.Type {
-                switch db_value {
-                    case let DatabaseValue.blob(data):
-                        value = try factory.decodeFromJSON(data: data)
-                    case let DatabaseValue.text(str):
-                        value = try factory.decodeFromJSON(text: str)
-                    default:
+            
+            switch valueType {
+                case is String.Type:
+                    value = db_value.stringValue
+                    
+                case is Data.Type:
+                    value = db_value.dataValue
+                    
+                case let f as CQIStruct.Type:
+                    value = try create(f.config, from: row)
+                    
+                case let f as DatabaseSerializable.Type:
+                    value = db_value.isNull ? nil : try f.deserialize(from: db_value)
+                    
+                case let f as Decodable.Type:
+                    if property.sealed {
                         value = db_value.anyValue
-                }
-            }
-            else {
-                value = db_value.anyValue
+                        break
+                    }
+                    switch db_value {
+                        case .null:
+                            value = nil
+                        case let DatabaseValue.blob(data):
+                            value = try f.decodeFromJSON(data: data)
+                        case let DatabaseValue.text(str):
+                            value = try f.decodeFromJSON(text: str)
+                        default:
+                            // Primative DB types are Decodable
+                            // But should we throw?
+                            value = db_value.anyValue
+                    }
+                    
+                default:
+                    value = db_value.anyValue
             }
             try property.set(value: value as Any, on: &nob)
         }
@@ -382,9 +378,11 @@ public extension CQIAdaptor {
         var cols: [String] = []
         var values: [ParameterBindable?] = []
         
-        for slot in cfg.slots where slot.includeInFetch {
+        // FIXME: New design allows for nested structs to hold multiple
+        // column values
+        for slot in cfg.slots where slot.hasColumnValue {
             let property = try cfg.info.property(named: slot.name)
-            cols.append(slot.column)
+            cols.append(slot.columns[0])
             try values.append(property.get(from: nob) as? ParameterBindable)
         }
         return (cols, values)
@@ -420,3 +418,5 @@ public extension CQIAdaptor {
         }
     }
 }
+
+

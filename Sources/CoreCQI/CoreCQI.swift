@@ -2,20 +2,25 @@ struct CoreCQI {
     var text = "Core Common Query Interface"
 }
 
-public protocol CQIEntity {
+public protocol CQIStruct {
     static var config: CQIConfig { get }
-    var id: EntityID { get set }
     mutating func preload()
     mutating func postload()
+}
+
+public protocol CQIEntity: CQIStruct {
+    var id: EntityID { get set }
 }
 
 public typealias DBEntity = CQIEntity & Identifiable
 
 // MARK: Helpers
 
-public protocol StringRepresentable: Hashable, Codable, ExpressibleByStringLiteral,
+public protocol StringRepresentable: Hashable, Codable,
+                                     ExpressibleByStringLiteral,
                                      Comparable,
-                                     CustomStringConvertible where StringLiteralType == String {
+                                     CustomStringConvertible where StringLiteralType == String
+{
     var value: String { set get }
 }
 

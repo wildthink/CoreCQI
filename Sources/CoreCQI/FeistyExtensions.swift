@@ -156,6 +156,15 @@ extension EntityID: DatabaseSerializable {
     }
 }
 
+public extension DatabaseValue {
+    var isNull: Bool {
+        switch self {
+            case .null: return true
+            default: return false
+        }
+    }
+}
+
 public extension Encodable {
     
     func encodeToJSONData() throws -> Data {

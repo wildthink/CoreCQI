@@ -17,10 +17,11 @@ import Runtime
 public class CQIConfig {
     public typealias OwnerType = CQIStruct.Type
     
-    var table: String
+    public let table: String
     var type: OwnerType
     var info: TypeInfo
     var slots: [Property] = []
+    var properties: [Property] { return slots }
     
     public init(_ name: String, type: OwnerType) throws {
         self.table = name
@@ -53,7 +54,7 @@ public class CQIConfig {
         return self
     }
     
-    func property(named: String) -> Property? {
+    public func property(named: String) -> Property? {
         slots.first(where: {$0.name == named })
     }
     
@@ -63,10 +64,10 @@ public class CQIConfig {
     }
 }
 
-class Property: CustomStringConvertible {
-    var name: String
-    var columns: [String] = []
-    var info: PropertyInfo
+public class Property: CustomStringConvertible {
+    public let name: String
+    public var columns: [String] = []
+    public let info: PropertyInfo
 
     var isExcluded: Bool { columns.isEmpty }
     var hasColumnValue: Bool { columns.count == 1 }
@@ -81,7 +82,7 @@ class Property: CustomStringConvertible {
         self.info = info
     }
     
-    var description: String {
+    public var description: String {
         "Slot (\(columns) -> \(name)"
     }
 }

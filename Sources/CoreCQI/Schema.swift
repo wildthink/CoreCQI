@@ -32,6 +32,7 @@ public struct Schema {
 public extension Schema {
     struct Block {
         var value: Any?
+        var tags: [String] = []
     }
     
     @_functionBuilder
@@ -47,8 +48,24 @@ protocol BlockConvertable {
     func asSchemaBlocks() -> [Schema.Block]
 }
 
+extension BlockConvertable {
+    func tag(_ tags: String...) -> Self {
+        // Apply the tags
+        self
+    }
+}
+
 extension Schema.Block: BlockConvertable {
     func asSchemaBlocks() -> [Schema.Block] { [self] }
+    
+    mutating func tag(_ tags: String...) -> Self {
+        var new = self.tags
+        for t in tags {
+            new.append(t)
+        }
+        self.tags = new
+        return self
+    }
 }
 
 //extension Schema.Group: BlockConvertable {
@@ -165,6 +182,24 @@ struct Table: BlockConvertable {
     }
 }
 
+struct Group: BlockConvertable {
+    typealias Block = Schema.Block
+    var name: String
+    var blocks: [Block]
+    func asSchemaBlocks() -> [Schema.Block] { blocks }
+    
+    init(_ name: String,
+         @Schema.Builder builder: () -> [Block]) {
+        self.name = name
+        self.blocks = builder()
+    }
+    
+    init(ref: String) {
+        self.name = ref
+        self.blocks = []
+    }
+}
+
 @_functionBuilder
 struct Prop {
     static func buildBlock() -> [Schema.Block] {
@@ -198,6 +233,7 @@ func demoSchema() {
             .memo("Date of Birth")
         Table ("Base") {
             Column("id", primaryKey: true)
+                .tag("one")
         }
         T_("Fact") {
             include(table: "Base")

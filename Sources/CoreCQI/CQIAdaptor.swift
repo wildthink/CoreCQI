@@ -76,7 +76,7 @@ open class CQIAdaptor {
     
     func log (_ error: Swift.Error, from caller: String = #function) {
         guard logErrors else { return }
-        Swift.print(error)
+        Report.print(error)
     }
     
 // MARK: exec methos

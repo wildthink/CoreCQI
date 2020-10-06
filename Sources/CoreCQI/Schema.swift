@@ -228,15 +228,16 @@ func include(table: String) -> [Schema.Block] {
 func demoSchema() {
     typealias T_ = Table
     
-    let schema = Schema(name: "demo") {
+    let schema = Schema(name: "habit") {
         Column("dob")
             .memo("Date of Birth")
         Table ("Base") {
             Column("id", primaryKey: true)
-                .tag("one")
         }
-        T_("Fact") {
+        T_("plan") {
             include(table: "Base")
+            Column("name")
+            Column("")
         }
     }
     

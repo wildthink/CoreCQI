@@ -31,6 +31,13 @@ public class CQIConfig {
         slots = ti.properties.map { Property($0.name, info: $0) }
     }
     
+    public func createInstance() throws -> CQIStruct {
+        type.init()
+//        guard let nob = try Runtime.createInstance(of: type) as? CQIStruct
+//        else { throw CQIAdaptor.CQIError("Unable to createInstance of \(type)") }
+//        return nob
+    }
+    
     /**
      The method returns a unique set of database columns and updates the Slot.col_ndx
      to correspond with its ordering
@@ -96,7 +103,7 @@ public extension CQIStruct {
     
     static var config: CQIConfig { Config() }
 
-    func preload() {}
+//    func preload() {}
     func postload() {}
 }
 

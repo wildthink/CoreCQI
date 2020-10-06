@@ -324,8 +324,10 @@ public extension CQIAdaptor {
 
     func create(_ cfg: CQIConfig, from row: Row) throws -> Any {
         
-        guard var nob = try createInstance(of: cfg.type) as? CQIStruct
-        else { throw CQIError("Unable to createInstance of \(cfg.type)") }
+//        guard var nob = try createInstance(of: cfg.type) as? CQIStruct
+//        else { throw CQIError("Unable to createInstance of \(cfg.type)") }
+        
+        var nob = try cfg.createInstance()
         
         for slot in cfg.slots where !slot.isExcluded {
             

@@ -118,37 +118,37 @@ extension NSPredicate {
 public extension CQIAdaptor {
     typealias DS = DatabaseSerializable
     
-    func first(_ type: CQIEntity.Type,
+    func first(_ type: CQIStruct.Type,
                from table: String? = nil,
                where format: String? = nil, _ argv: Any...,
                order_by: [Database.Ordering]? = nil
     )
-    -> CQIEntity? {
+    -> CQIStruct? {
         if let format = format {
             let pred = NSPredicate(format: format, argumentArray: argv)
             return try? first(type.config, from: table, where: pred, order_by: order_by)
-                as? CQIEntity
+                as? CQIStruct
         } else {
-            return try? first(type.config, from: table, order_by: order_by) as? CQIEntity
+            return try? first(type.config, from: table, order_by: order_by) as? CQIStruct
         }
     }
     
-    func select(_ type: CQIEntity.Type,
+    func select(_ type: CQIStruct.Type,
                 from table: String? = nil,
                 where format: String? = nil, _ argv: Any...,
                 order_by: [Database.Ordering]? = nil,
-                limit: Int = 0) -> [CQIEntity] {
+                limit: Int = 0) -> [CQIStruct] {
         
         do {
             if let format = format {
                 let pred = NSPredicate(format: format, argumentArray: argv)
                 return try (select(type.config, from: table,
                                    where: pred, order_by: order_by, limit: limit)
-                                as? [CQIEntity]) ?? []
+                                as? [CQIStruct]) ?? []
             } else {
                 return try (select(type.config, from: table,
                                    order_by: order_by, limit: limit)
-                                as? [CQIEntity]) ?? []
+                                as? [CQIStruct]) ?? []
             }
         } catch {
             //            log(error)

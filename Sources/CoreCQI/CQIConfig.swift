@@ -71,6 +71,19 @@ public class CQIConfig {
     }
 }
 
+public extension CQIConfig {
+    func create_sql(ifnot: Bool = false) -> String {
+        let val_cols = columns().filter { $0 != "id" }
+        let ife = ifnot ? "IF NOT EXISTS " : ""
+        return """
+        CREATE TABLE \(table) \(ife)(
+            id INTEGER PRIMARY KEY,
+            \(val_cols.joined(separator: ",")
+        )
+        """
+    }
+}
+
 public class Property: CustomStringConvertible {
     public let name: String
     public var columns: [String] = []

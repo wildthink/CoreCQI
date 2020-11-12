@@ -413,7 +413,9 @@ public extension CQIAdaptor {
         return db.changes
     }
 
-    func columnsAndValues<E: CQIEntity>(_ nob: E) throws -> ([String], [ParameterBindable?]) {
+    func columnsAndValues<E: CQIEntity>(_ nob: E,
+                                        alter: [String:ParameterBindable] = [:])
+    throws -> ([String], [ParameterBindable?]) {
         let cfg = E.config
         var cols: [String] = []
         var values: [ParameterBindable?] = []
@@ -423,7 +425,11 @@ public extension CQIAdaptor {
         for slot in cfg.slots where slot.hasColumnValue {
             let property = try cfg.info.property(named: slot.name)
             cols.append(slot.columns[0])
-            try values.append(property.get(from: nob) as? ParameterBindable)
+            if let altv = alter[property.name] {
+                values.append(altv is NSNull ? nil : altv)
+            } else {
+                try values.append(property.get(from: nob) as? ParameterBindable)
+            }
         }
         return (cols, values)
      }
@@ -442,6 +448,17 @@ public extension CQIAdaptor {
         let (cols, values) = try columnsAndValues(nob)
         try db.update(E.config.table, cols: cols, to: values)
         return db.changes
+    }
+
+    @discardableResult
+    func duplicate<E: CQIEntity>(_ nob: E) throws -> Int {
+        
+        let cfg = E.config
+        var clone = nob // .clone() if Clonable
+        clone.id = EntityID()
+        let (cols, values) = try columnsAndValues(clone)
+        try db.insert(cfg.table, cols: cols, to: values)
+        return Int(db.lastInsertRowid ?? 0)
     }
 
     func upsert<E: CQIEntity>(_ nob: inout E) throws {

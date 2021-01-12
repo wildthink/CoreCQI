@@ -1,3 +1,5 @@
 # CoreCQI
 
-A description of this package.
+Core Common Query Interface
+
+

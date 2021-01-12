@@ -6,7 +6,16 @@
         "repositoryURL": "https://github.com/wildthink/FeistyDB",
         "state": {
           "branch": "master",
-          "revision": "03e247677a4a1e77c84e24c3a476929d0ba51f35",
+          "revision": "d6c846295f096567526946ab0f1eefed95b1ac94",
+          "version": null
+        }
+      },
+      {
+        "package": "MOSchema",
+        "repositoryURL": "https://github.com/wildthink/MOSchema",
+        "state": {
+          "branch": "main",
+          "revision": "4308346314a28ea4ea3c612fb4e3557aef1a189e",
           "version": null
         }
       },
@@ -15,7 +24,7 @@
         "repositoryURL": "https://github.com/wildthink/Runtime",
         "state": {
           "branch": "master",
-          "revision": "b13f5ecc3865f294ebfbe724309070b8550edd62",
+          "revision": "5142883097af2620c37944fad538f94476ace878",
           "version": null
         }
       },

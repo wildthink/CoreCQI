@@ -14,7 +14,7 @@ let package = Package(
         .library(name: "CoreCQI", targets: ["CoreCQI"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/davedelong/Time", from: "0.9.1"),
+//        .package(url: "https://github.com/davedelong/Time", from: "0.9.1"),
         .package(url: "https://github.com/wildthink/FeistyDB", .branch("master")),
         .package(url: "https://github.com/wildthink/Runtime", .branch("master")),
         .package(url: "https://github.com/wildthink/MOSchema", .branch("main")),
@@ -28,7 +28,7 @@ let package = Package(
             name: "CoreCQI",
             dependencies: ["FeistyDB", 
                 .product(name: "MOSchema", package: "MOSchema"),
-                .product(name: "Time", package: "Time"),
+//                .product(name: "Time", package: "Time"),
                 .product(name: "Runtime", package: "Runtime"),
                 .product(name: "FeistyExtensions", package: "FeistyDB"),
              ],

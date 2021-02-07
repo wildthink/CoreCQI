@@ -28,6 +28,7 @@ let package = Package(
             name: "CoreCQI",
             dependencies: ["FeistyDB", 
                 .product(name: "MOSchema", package: "MOSchema"),
+                .product(name: "EOSchema", package: "MOSchema"),
 //                .product(name: "Time", package: "Time"),
                 .product(name: "Runtime", package: "Runtime"),
                 .product(name: "FeistyExtensions", package: "FeistyDB"),

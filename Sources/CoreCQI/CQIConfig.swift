@@ -32,10 +32,10 @@ public class CQIConfig {
     }
     
     public func createInstance() throws -> CQIStruct {
-        type.init()
-//        guard let nob = try Runtime.createInstance(of: type) as? CQIStruct
-//        else { throw CQIAdaptor.CQIError("Unable to createInstance of \(type)") }
-//        return nob
+//        type.init()
+        guard let nob = try Runtime.createInstance(of: type) as? CQIStruct
+        else { throw CQIAdaptor.CQIError("Unable to createInstance of \(type)") }
+        return nob
     }
     
     /**

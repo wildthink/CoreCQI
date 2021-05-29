@@ -4,7 +4,7 @@ struct CoreCQI {
 
 public protocol CQIStruct {
     static var config: CQIConfig { get }
-    init()
+//    init()
 //    mutating func preload()
     mutating func postload()
 }

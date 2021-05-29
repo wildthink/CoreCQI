@@ -35,7 +35,7 @@ public extension Schema {
         var tags: [String] = []
     }
     
-    @_functionBuilder
+    @resultBuilder
     struct Builder {
         static func buildBlock() -> [Schema.Block] {
             trace()
@@ -200,7 +200,7 @@ struct Group: BlockConvertable {
     }
 }
 
-@_functionBuilder
+@resultBuilder
 struct Prop {
     static func buildBlock() -> [Schema.Block] {
         trace()
@@ -208,7 +208,7 @@ struct Prop {
     }
 }
 
-@_functionBuilder
+@resultBuilder
 struct Relationship {
     static func buildBlock() -> [Schema.Block] {
         trace()

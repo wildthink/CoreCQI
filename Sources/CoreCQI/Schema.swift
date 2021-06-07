@@ -125,11 +125,11 @@ extension String: BlockConvertable {
     - [String: Any]
  */
 
-public struct EntityInfo {
-    func asSchemaBlocks() -> [Schema.Block] {
-        []
-    }
-}
+//public struct EntityInfo {
+//    func asSchemaBlocks() -> [Schema.Block] {
+//        []
+//    }
+//}
 
 struct Column: BlockConvertable {
     

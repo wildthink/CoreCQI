@@ -11,30 +11,12 @@
         }
       },
       {
-        "package": "MOSchema",
-        "repositoryURL": "https://github.com/wildthink/MOSchema",
-        "state": {
-          "branch": "main",
-          "revision": "4308346314a28ea4ea3c612fb4e3557aef1a189e",
-          "version": null
-        }
-      },
-      {
         "package": "Runtime",
         "repositoryURL": "https://github.com/wildthink/Runtime",
         "state": {
           "branch": "master",
           "revision": "5142883097af2620c37944fad538f94476ace878",
           "version": null
-        }
-      },
-      {
-        "package": "Time",
-        "repositoryURL": "https://github.com/davedelong/Time",
-        "state": {
-          "branch": null,
-          "revision": "d8a3557205a895bb130a17148517c9f9f7136b5f",
-          "version": "0.9.1"
         }
       }
     ]

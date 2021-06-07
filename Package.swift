@@ -17,7 +17,7 @@ let package = Package(
 //        .package(url: "https://github.com/davedelong/Time", from: "0.9.1"),
         .package(url: "https://github.com/wildthink/FeistyDB", .branch("master")),
         .package(url: "https://github.com/wildthink/Runtime", .branch("master")),
-        .package(url: "https://github.com/wildthink/MOSchema", .branch("main")),
+//        .package(url: "https://github.com/wildthink/MOSchema", .branch("main")),
 //        .package(url: "https://github.com/phimage/MomXML", from: "1.2.0"),
 //        .package(url: "https://github.com/drmohundro/SWXMLHash.git", from: "5.0.1")
     ],
@@ -27,8 +27,8 @@ let package = Package(
         .target(
             name: "CoreCQI",
             dependencies: ["FeistyDB", 
-                .product(name: "MOSchema", package: "MOSchema"),
-                .product(name: "EOSchema", package: "MOSchema"),
+//                .product(name: "MOSchema", package: "MOSchema"),
+//                .product(name: "EOSchema", package: "MOSchema"),
 //                .product(name: "Time", package: "Time"),
                 .product(name: "Runtime", package: "Runtime"),
                 .product(name: "FeistyExtensions", package: "FeistyDB"),
